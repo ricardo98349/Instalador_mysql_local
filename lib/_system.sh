@@ -186,15 +186,15 @@ sleep 2
 
   sudo su - deploy <<EOF
   cd && cd /home/deploy/${empresa_dominio}/frontend
-  sed -i "1c\REACT_APP_BACKEND_URL=https://${alter_backend_url}" .env
+  sed -i "1c\REACT_APP_BACKEND_URL=http://${alter_backend_url}" .env
   cd && cd /home/deploy/${empresa_dominio}/backend
-  sed -i "2c\BACKEND_URL=https://${alter_backend_url}" .env
-  sed -i "3c\FRONTEND_URL=https://${alter_frontend_url}" .env 
+  sed -i "2c\BACKEND_URL=http://${alter_backend_url}" .env
+  sed -i "3c\FRONTEND_URL=http://${alter_frontend_url}" .env 
 EOF
 
 sleep 2
    
-   backend_hostname=$(echo "${alter_backend_url/https:\/\/}")
+   backend_hostname=$(echo "${alter_backend_url/http:\/\/}")
 
  sudo su - root <<EOF
   cat > /etc/nginx/sites-available/${empresa_dominio}-backend << 'END'
@@ -218,7 +218,7 @@ EOF
 
 sleep 2
 
-frontend_hostname=$(echo "${alter_frontend_url/https:\/\/}")
+frontend_hostname=$(echo "${alter_frontend_url/http:\/\/}")
 
 sudo su - root << EOF
 cat > /etc/nginx/sites-available/${empresa_dominio}-frontend << 'END'
@@ -248,8 +248,8 @@ EOF
 
   sleep 2
 
-  backend_domain=$(echo "${backend_url/https:\/\/}")
-  frontend_domain=$(echo "${frontend_url/https:\/\/}")
+  backend_domain=$(echo "${backend_url/http:\/\/}")
+  frontend_domain=$(echo "${frontend_url/http:\/\/}")
 
   sudo su - root <<EOF
   certbot -m $deploy_email \
@@ -482,113 +482,3 @@ EOF
   sleep 2
 }
 
-#######################################
-# installs certbot
-# Arguments:
-#   None
-#######################################
-system_certbot_install() {
-  print_banner
-  printf "${WHITE} 💻 Instalando certbot...${GRAY_LIGHT}"
-  printf "\n\n"
-
-  sleep 2
-
-  sudo su - root <<EOF
-  apt-get remove certbot
-  snap install --classic certbot
-  ln -s /snap/bin/certbot /usr/bin/certbot
-EOF
-
-  sleep 2
-}
-
-#######################################
-# installs nginx
-# Arguments:
-#   None
-#######################################
-system_nginx_install() {
-  print_banner
-  printf "${WHITE} 💻 Instalando nginx...${GRAY_LIGHT}"
-  printf "\n\n"
-
-  sleep 2
-
-  sudo su - root <<EOF
-  apt install -y nginx
-  rm /etc/nginx/sites-enabled/default
-  rm /etc/nginx/sites-available/default
-EOF
-
-  sleep 2
-}
-
-#######################################
-# restarts nginx
-# Arguments:
-#   None
-#######################################
-system_nginx_restart() {
-  print_banner
-  printf "${WHITE} 💻 reiniciando nginx...${GRAY_LIGHT}"
-  printf "\n\n"
-
-  sleep 2
-
-  sudo su - root <<EOF
-  service nginx restart
-EOF
-
-  sleep 2
-}
-
-#######################################
-# setup for nginx.conf
-# Arguments:
-#   None
-#######################################
-system_nginx_conf() {
-  print_banner
-  printf "${WHITE} 💻 configurando nginx...${GRAY_LIGHT}"
-  printf "\n\n"
-
-  sleep 2
-
-sudo su - root << EOF
-
-cat > /etc/nginx/conf.d/deploy.conf << 'END'
-client_max_body_size 100M;
-END
-
-EOF
-
-  sleep 2
-}
-
-#######################################
-# installs nginx
-# Arguments:
-#   None
-#######################################
-system_certbot_setup() {
-  print_banner
-  printf "${WHITE} 💻 Configurando certbot...${GRAY_LIGHT}"
-  printf "\n\n"
-
-  sleep 2
-
-  backend_domain=$(echo "${backend_url/https:\/\/}")
-  frontend_domain=$(echo "${frontend_url/https:\/\/}")
-
-  sudo su - root <<EOF
-  certbot -m $deploy_email \
-          --nginx \
-          --agree-tos \
-          --non-interactive \
-          --domains $backend_domain,$frontend_domain
-
-EOF
-
-  sleep 2
-}
